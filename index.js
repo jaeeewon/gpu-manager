@@ -59,7 +59,7 @@ app.get('/', (req, res) =>
 app.use(async (req, res, next) => {
     if (req.query.pass !== pw) {
         if (!ignorePaths.includes(req.path)) await doNoti({ title: `GPU 관리 프로그램에 부정 접근이 확인됨`, body: `IP: ${req.headers['x-real-ip']}\nPW: ${req.query.pass}` })
-        res.status(401).send('unauthorized request');
+        return res.status(401).send('unauthorized request');
     }
     next()
 })
