@@ -56,7 +56,7 @@ const html =
         clearVisibles()
         pwAssertion()
         const no = document.getElementById('instance').value;
-        const res = await fetch(\`/get-gpu-status?no=\${no}&pass=\${PASSWORD}\`);
+        const res = await fetch(\`./get-gpu-status?no=\${no}&pass=\${PASSWORD}\`);
 
         if (res.status === 401) {
             PASSWORD = 'unauth';
@@ -71,7 +71,7 @@ const html =
         clearVisibles()
         pwAssertion()
         const no = document.getElementById('instance').value;
-        const res = await fetch(\`/reset-instance?no=\${no}&pass=\${PASSWORD}\`, { method: 'POST' });
+        const res = await fetch(\`./reset-instance?no=\${no}&pass=\${PASSWORD}\`, { method: 'POST' });
 
         if (res.status === 401) {
             PASSWORD = 'unauth';
