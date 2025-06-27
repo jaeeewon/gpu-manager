@@ -1,17 +1,87 @@
 import express from 'express';
 import { exec } from 'child_process';
-import path from 'path';
 import axios from 'axios';
 import env from "dotenv";
 env.config();
 
 const app = express();
 const PORT = 3001;
-const __dirname = path.resolve();
 
 const ignorePaths = ['/favicon.ico']
 
-const { pw, uuid, toUuid, userToken } = process.env;
+let { pw, uuid, toUuid, userToken, from, to } = process.env;
+from = +from
+to = +to
+
+const html =
+    `<head>
+    <title>LangAI GPU 복구</title>
+</head>
+
+<h1>wakeup 4090 😭</h1>
+<h4>GPU가 어떤 이유에선지 자꾸 죽는데,, 매번 제가 살릴 수 없어서 만들었습니다</h4>
+
+<label for="instance">인스턴스를 선택하세요</label>
+<select onchange="clearVisibles()" id="instance">
+    ${Array.from(new Array(to - from + 1), (_, i) => `<option value="${from + i}">hufs0${from + i}</option>`).join('\n')}
+</select>
+
+<button onclick="getGpuStatus()">GPU 상태 불러오기</button>
+<button style="display: none;" id="reset" onclick="resetInstance()">인스턴스 재시작(문제 해결하기)</button>
+
+<pre id="output" style="margin-top: 20px; padding: 10px;"></pre>
+
+<script>
+    const pre = document.getElementById('output')
+    const reset = document.getElementById('reset')
+    let PASSWORD = '';
+
+    function pwAssertion() {
+        while (PASSWORD.length !== 4) PASSWORD = prompt(PASSWORD === 'unauth' ? '비밀번호 오류! 다시 입력' : '비밀번호 입력')
+    }
+
+    function setStatus(stdout) {
+        const isOk = !stdout.includes('Failed to initialize NVML: Unknown Error')
+        pre.textContent = stdout;
+        pre.style.color = isOk ? 'green' : 'red'
+        reset.style.display = isOk ? 'none' : ''
+    }
+
+    function clearVisibles() {
+        pre.textContent = '';
+        reset.style.display = 'none'
+    }
+
+    async function getGpuStatus() {
+        clearVisibles()
+        pwAssertion()
+        const no = document.getElementById('instance').value;
+        const res = await fetch(\`/get-gpu-status?no=\${no}&pass=\${PASSWORD}\`);
+
+        if (res.status === 401) {
+            PASSWORD = 'unauth';
+            return await getGpuStatus()
+        }
+
+        const json = await res.json();
+        setStatus(json.success ? json.data.stdout : 'Error: ' + json.message);
+    }
+
+    async function resetInstance() {
+        clearVisibles()
+        pwAssertion()
+        const no = document.getElementById('instance').value;
+        const res = await fetch(\`/reset-instance?no=\${no}&pass=\${PASSWORD}\`, { method: 'POST' });
+
+        if (res.status === 401) {
+            PASSWORD = 'unauth';
+            return await resetInstance()
+        }
+
+        const json = await res.json();
+        setStatus(json.success ? json.data.stdout : 'Error: ' + json.message);
+    }
+</script>`
 
 /**
  * stderr·비정상 종료 코드가 있어도 reject 하지 않는 exec 래퍼
@@ -31,7 +101,7 @@ function execSafe(cmd, opts = {}) {
 
 function instanceNumberAssertion(num) {
     if (typeof num !== 'number') throw new Error('only numbers are acceptable!')
-    if (num < 1 || num > 4) throw new Error('top-server only has 1-4 instance')
+    if (num < +from || num > +to) throw new Error('top-server only has 1-4 instance')
 }
 
 async function getGpuStatus(num) {
@@ -52,8 +122,8 @@ async function resetInstance(num) {
     return await getGpuStatus(num)
 }
 
-app.get('/', (req, res) =>
-    res.sendFile(path.join(__dirname, 'manager.html'))
+app.get('/', (_req, res) =>
+    res.send(html)
 )
 
 app.use(async (req, res, next) => {
@@ -90,7 +160,7 @@ app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
 
-function trim(str, max=850) {
+function trim(str, max = 850) {
     if (typeof str !== 'string') return '';
     return str.length > max ? str.slice(0, max) : str;
 }
