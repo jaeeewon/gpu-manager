@@ -1,0 +1,15 @@
+{
+    "apps": [
+        {
+            "name": "svrmgr",
+            "script": "./index.js",
+            "watch": false,
+            "autorestart": true,
+            "time": true,
+            "wait_ready": true,
+            "args": [
+                "--color"
+            ]
+        }
+    ]
+}
